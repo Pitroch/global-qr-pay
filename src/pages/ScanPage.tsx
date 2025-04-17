@@ -16,7 +16,12 @@ const ScanPage = () => {
 
   // Ensure component is fully mounted before initializing scanner
   useEffect(() => {
-    setIsReady(true);
+    // Short delay to ensure DOM is fully rendered
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const handleScanSuccess = (decodedText: string) => {

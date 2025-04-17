@@ -16,7 +16,6 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-scanner-container';
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const checkCameraPermission = async () => {
     try {
@@ -53,7 +52,8 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
       }
       
       // Make sure the container element exists
-      if (!containerRef.current) {
+      const containerElement = document.getElementById(scannerContainerId);
+      if (!containerElement) {
         console.error("Scanner container element not found");
         if (onScanError) onScanError("Scanner initialization failed");
         return;
@@ -165,7 +165,6 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
               <div 
                 id={scannerContainerId} 
                 className="w-full h-full"
-                ref={containerRef}
               ></div>
               
               {/* Scanner overlay with corner markers for better UX */}

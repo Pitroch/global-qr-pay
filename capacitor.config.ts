@@ -20,7 +20,11 @@ const config: CapacitorConfig = {
       keystorePassword: null,
       keystoreAlias: null,
       keystoreAliasPassword: null,
-    }
+    },
+    permissions: [
+      "android.permission.CAMERA",
+      "android.permission.ACCESS_NETWORK_STATE"
+    ]
   }
 };
 
