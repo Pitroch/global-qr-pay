@@ -6,13 +6,17 @@ import QRScanner from '@/components/scanner/QRScanner';
 import { parseQRCode, createTransaction } from '@/utils/paymentUtils';
 import { QRPaymentData } from '@/types/payment';
 import { toast } from '@/components/ui/use-toast';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ScanPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleScanSuccess = (decodedText: string) => {
     setIsProcessing(true);
+    setScanError(null);
     
     // Parse the QR code
     const paymentData = parseQRCode(decodedText);
@@ -35,6 +39,8 @@ const ScanPage = () => {
   };
 
   const handleScanError = (error: string) => {
+    setScanError(error);
+    setIsProcessing(false);
     toast({
       title: "Scanning Error",
       description: error,
@@ -51,6 +57,13 @@ const ScanPage = () => {
             Scan any UPI or wallet QR code to make a payment
           </p>
         </div>
+        
+        {scanError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{scanError}</AlertDescription>
+          </Alert>
+        )}
         
         <QRScanner 
           onScanSuccess={handleScanSuccess} 

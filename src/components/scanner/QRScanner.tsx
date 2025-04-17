@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ScanIcon, X } from 'lucide-react';
+import { ScanIcon, X, Camera, CameraOff } from 'lucide-react';
 
 interface QRScannerProps {
   onScanSuccess: (decodedText: string) => void;
@@ -13,25 +13,59 @@ interface QRScannerProps {
 const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-scanner-container';
+
+  const checkCameraPermission = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      if (cameras.length === 0) {
+        setError("No camera found on your device");
+        return false;
+      }
+      
+      // Try to get camera stream to check permission
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Stop the stream immediately after checking
+      stream.getTracks().forEach(track => track.stop());
+      setHasCameraPermission(true);
+      return true;
+    } catch (err) {
+      console.error("Camera permission error:", err);
+      setHasCameraPermission(false);
+      setError("Camera access denied. Please enable camera permissions.");
+      return false;
+    }
+  };
 
   const startScanner = async () => {
     try {
       setError(null);
+      
+      // Check camera permission first
+      const hasPermission = await checkCameraPermission();
+      if (!hasPermission) {
+        if (onScanError) onScanError("Camera permission denied");
+        return;
+      }
+      
       setIsScanning(true);
 
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode(scannerContainerId);
       }
 
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
       await scannerRef.current.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
+        { facingMode: "environment" },
+        config,
         (decodedText) => {
           handleScanSuccess(decodedText);
         },
@@ -41,7 +75,10 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
         }
       );
     } catch (err) {
-      handleScanError(err instanceof Error ? err.message : 'Failed to start scanner');
+      console.error("Scanner startup error:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start scanner';
+      handleScanError(errorMessage);
+      setIsScanning(false);
     }
   };
 
@@ -79,17 +116,31 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
       <div className="flex flex-col items-center space-y-6">
         {!isScanning ? (
           <Card className="w-full p-6 flex flex-col items-center text-center">
-            <ScanIcon className="h-16 w-16 text-primary mb-4" />
+            {hasCameraPermission === false ? (
+              <CameraOff className="h-16 w-16 text-destructive mb-4" />
+            ) : (
+              <Camera className="h-16 w-16 text-primary mb-4" />
+            )}
+            
             <h2 className="text-xl font-semibold mb-2">Scan QR Code</h2>
-            <p className="text-muted-foreground mb-6">
-              Position the QR code within the frame to scan and process the payment
-            </p>
+            
+            {hasCameraPermission === false ? (
+              <p className="text-destructive mb-6">
+                Camera access denied. Please enable camera permissions in your browser settings.
+              </p>
+            ) : (
+              <p className="text-muted-foreground mb-6">
+                Position the QR code within the frame to scan and process the payment
+              </p>
+            )}
+            
             <Button 
               className="w-full max-w-xs" 
               onClick={startScanner} 
               size="lg"
+              disabled={hasCameraPermission === false}
             >
-              Start Scanning
+              {hasCameraPermission === false ? "Enable Camera Access" : "Start Scanning"}
             </Button>
           </Card>
         ) : (
