@@ -1,22 +1,30 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import QRScanner from '@/components/scanner/QRScanner';
 import { parseQRCode, createTransaction } from '@/utils/paymentUtils';
-import { QRPaymentData } from '@/types/payment';
-import { toast } from '@/components/ui/use-toast';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/components/ui/use-toast';
 
 const ScanPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
+
+  // Ensure component is fully mounted before initializing scanner
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   const handleScanSuccess = (decodedText: string) => {
     setIsProcessing(true);
     setScanError(null);
+    
+    // Log the scanned text for debugging
+    console.log("Scanned QR code:", decodedText);
     
     // Parse the QR code
     const paymentData = parseQRCode(decodedText);
@@ -39,6 +47,7 @@ const ScanPage = () => {
   };
 
   const handleScanError = (error: string) => {
+    console.error("Scan error:", error);
     setScanError(error);
     setIsProcessing(false);
     toast({
@@ -65,10 +74,12 @@ const ScanPage = () => {
           </Alert>
         )}
         
-        <QRScanner 
-          onScanSuccess={handleScanSuccess} 
-          onScanError={handleScanError} 
-        />
+        {isReady && (
+          <QRScanner 
+            onScanSuccess={handleScanSuccess} 
+            onScanError={handleScanError} 
+          />
+        )}
         
         {isProcessing && (
           <div className="mt-6 text-center">
